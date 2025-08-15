@@ -1,18 +1,36 @@
-// Importa el framework Express para crear el servidor
 import express from 'express';
-// Importa el enrutador principal desde el archivo index.routes.js
-import indexRouter from './routes/index.routes.js';
-// Crea una instancia de la aplicación Express
+import { join } from "path"; 
+import morgan from "morgan";
+import cookieParser from 'cookie-parser';
+import dotenv from 'dotenv';
+import { pool, initializeDB } from './config/db.js';
+import { fileURLToPath } from 'url';
+import authRouter from './routes/auth.routes.js';
+import notesRouter from './routes/notes.routes.js';
+dotenv.config();
+import expressLayouts from 'express-ejs-layouts';
 const app = express();
 
-// Configura el puerto en el que escuchará el servidor (3050)
-app.set('port', 3050);
+// Configuración de vistas
+app.set('view engine', 'ejs');
+app.set('views', 'views');
 
-// Establece el prefijo '/api' para todas las rutas definidas en indexRouter
-app.use('/api', indexRouter);
+// Middlewares
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static(join('public')));
+app.use(cookieParser());
+app.use(morgan('dev'));
 
-// Inicia el servidor en el puerto configurado
-app.listen(app.get('port'), () => {
-  // Mensaje de confirmación cuando el servidor está en funcionamiento
-  console.log('Server on port ' + app.get('port'));
+
+// Rutas
+app.use('/', authRouter);
+app.use('/notes', notesRouter);
+
+// Inicializar base de datos y servidor
+initializeDB().then(() => {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  });
 });
